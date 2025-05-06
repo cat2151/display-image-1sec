@@ -35,7 +35,7 @@ def display_image(args):
 
     (root, canvas) = create_gui(x, y, f"display-image-1sec : {args.png_filename}")
     load_image_to_canvas(x, y, args.png_filename, root, canvas)
-    print_string_to_canvas(x, y, args.disp_string, args.font_size, root, canvas)
+    print_string_to_canvas(x, y, args.disp_string, args.font, args.font_size, root, canvas)
 
     # 1秒待機
     root.after(args.disp_msec)
@@ -59,14 +59,14 @@ def load_image_to_canvas(x, y, png_filename, root, canvas):
     root.images.append(image)  # Keep a reference to avoid garbage collection
     root.update()
 
-def print_string_to_canvas(x, y, disp_string, font_size, root, canvas):
+def print_string_to_canvas(x, y, disp_string, font, font_size, root, canvas):
     # 縁取り
-    canvas.create_text(x / 2 + 1, y / 2 + 1, text=disp_string, font=("Helvetica", font_size), fill="black")
-    canvas.create_text(x / 2 - 1, y / 2 - 1, text=disp_string, font=("Helvetica", font_size), fill="black")
-    canvas.create_text(x / 2 + 1, y / 2 - 1, text=disp_string, font=("Helvetica", font_size), fill="black")
-    canvas.create_text(x / 2 - 1, y / 2 + 1, text=disp_string, font=("Helvetica", font_size), fill="black")
+    canvas.create_text(x / 2 + 1, y / 2 + 1, text=disp_string, font=(font, font_size), fill="black")
+    canvas.create_text(x / 2 - 1, y / 2 - 1, text=disp_string, font=(font, font_size), fill="black")
+    canvas.create_text(x / 2 + 1, y / 2 - 1, text=disp_string, font=(font, font_size), fill="black")
+    canvas.create_text(x / 2 - 1, y / 2 + 1, text=disp_string, font=(font, font_size), fill="black")
     # 本文
-    canvas.create_text(x / 2, y / 2, text=disp_string, font=("Helvetica", font_size), fill="white")
+    canvas.create_text(x / 2, y / 2, text=disp_string, font=(font, font_size), fill="white")
     root.update()
 
 if __name__ == "__main__":
