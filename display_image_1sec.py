@@ -33,7 +33,7 @@ def display_image(args):
     x = args.canvas_size_x
     y = args.canvas_size_y
 
-    (root, canvas) = create_gui(x, y, f"display-image-1sec : {args.png_filename}")
+    (root, canvas) = create_gui(x, y, args.pos_x, args.pos_y, f"display-image-1sec : {args.png_filename}")
     load_image_to_canvas(x, y, args.png_filename, root, canvas)
     print_string_to_canvas(x, y, args.disp_string, args.font, args.font_size, root, canvas)
 
@@ -42,13 +42,17 @@ def display_image(args):
     root.destroy()
     root.mainloop()
 
-def create_gui(x, y, title):
+def create_gui(x, y, pos_x, pos_y, title):
     root = tkinter.Tk()
     root.title(title)
     root.geometry(f"{x}x{y}")
     root.configure(bg="black")
     canvas = tkinter.Canvas(root, width=x, height=y, bg="black", highlightthickness=0)
     canvas.pack()
+
+    root.geometry(f"+{pos_x}+{pos_y}")
+    root.update()
+
     return root,canvas
 
 def load_image_to_canvas(x, y, png_filename, root, canvas):
