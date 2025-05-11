@@ -1,22 +1,17 @@
 """IPC Client for Windows using Named Pipes
-検証用
-使い方
-    1. サーバーを起動する : `start python ipc_server.py`
-    2. このスクリプトを実行する
-    3. キーボードから文字を入力する
-    4. サーバー側で受信したメッセージが表示されることを確認する
-    5. 終了するときは、'q'を入力する
+すぐdisconnectする
+処理負荷と処理速度の検証用
 """
+import time
 import msvcrt
 import win32file
-import pywintypes
 import win32pipe
+import pywintypes
 
 pipe_name = r'\\.\pipe\mypipe_test'
 
 def main():
     try:
-        handle = create_pipe_handle()
         print("Type characters to send to the server. Press 'q' to quit.")
         while True:
             if msvcrt.kbhit():  # キーボード入力があるか確認
@@ -24,8 +19,10 @@ def main():
                 if user_input.lower() == "q":  # 'q'で終了
                     print("Exiting...")
                     break
+                handle = create_pipe_handle()
                 send_user_input(handle, user_input)
-        win32file.CloseHandle(handle)
+                win32file.CloseHandle(handle)
+            time.sleep(1 / 60)
     except pywintypes.error as e:
         print(f"Failed to connect to pipe: {e}")
 

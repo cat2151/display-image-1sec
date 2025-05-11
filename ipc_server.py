@@ -9,7 +9,7 @@ import win32pipe
 import win32file
 import pywintypes
 
-pipe_name = r'\\.\pipe\mypipe'
+pipe_name = r'\\.\pipe\mypipe_test'
 
 def main():
     (root, message_label) = gui_setup()
