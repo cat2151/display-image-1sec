@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from threading import Thread
+import random
 import win32pipe
 import win32file
 import pywintypes
@@ -12,6 +13,7 @@ def main():
     args = update_args_by_toml(args, args.config_filename)
 
     args.image_list = load_image_list(args.png_list_filename)
+    random.shuffle(args.image_list)
     args.current_image_index = 0
     # TODO あとで index は、history.json に保存する。そして history.json のファイル名はtomlで指定する
 
