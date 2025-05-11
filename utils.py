@@ -22,3 +22,7 @@ def read_toml(filename):
     with open(filename, 'r', encoding='utf-8') as f:
         toml_data = toml.load(f)
     return toml_data
+
+def load_image_list(filename):
+    with open(filename, 'r', encoding='utf-8') as f:
+        return [line.strip() for line in f if line.strip()]

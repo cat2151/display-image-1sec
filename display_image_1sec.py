@@ -4,7 +4,8 @@ import win32pipe
 import win32file
 import pywintypes
 from gui import create_gui, do_backmost, do_topmost, load_image_to_canvas, print_string_to_canvas
-from utils import get_args, update_args_by_toml
+from ipc import create_named_pipe
+from utils import get_args, load_image_list, update_args_by_toml
 
 def main():
     args = get_args()
@@ -15,10 +16,6 @@ def main():
     # TODO あとで index は、history.json に保存する。そして history.json のファイル名はtomlで指定する
 
     display_image(args)
-
-def load_image_list(filename):
-    with open(filename, 'r', encoding='utf-8') as f:
-        return [line.strip() for line in f if line.strip()]
 
 def display_image(args):
     x = args.canvas_size_x
@@ -93,17 +90,6 @@ def do_action(args, root, canvas):
 
     last_action_time = datetime.now()
     return last_action_time
-
-def create_named_pipe(pipe_name):
-    pipe = win32pipe.CreateNamedPipe(
-        pipe_name,
-        win32pipe.PIPE_ACCESS_DUPLEX,
-        win32pipe.PIPE_TYPE_MESSAGE | win32pipe.PIPE_READMODE_MESSAGE | win32pipe.PIPE_WAIT,
-        1, 65536, 65536,
-        0,
-        None
-    )
-    return pipe
 
 if __name__ == "__main__":
     main()
