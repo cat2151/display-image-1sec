@@ -31,17 +31,20 @@ def run_ipc_listener(pipe_name, root, disp_msec):
             print("Waiting for client connection...")
             win32pipe.ConnectNamedPipe(pipe, None)
             print("Client connected.")
-            while True:
-                try:
-                    handle_received_message(pipe, root, disp_msec)
-                except pywintypes.error as e:
-                    if e.args[0] == 109:  # ERROR_BROKEN_PIPE
-                        print("Client disconnected.")
-                        break
-                    else:
-                        raise
+            handle_client_communication(pipe, root, disp_msec)
         finally:
             win32file.CloseHandle(pipe)
+
+def handle_client_communication(pipe, root, disp_msec):
+    while True:
+        try:
+            handle_received_message(pipe, root, disp_msec)
+        except pywintypes.error as e:
+            if e.args[0] == 109:  # ERROR_BROKEN_PIPE
+                print("Client disconnected.")
+                break
+            else:
+                raise
 
 def create_named_pipe(pipe_name):
     pipe = win32pipe.CreateNamedPipe(
