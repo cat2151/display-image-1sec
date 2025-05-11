@@ -9,7 +9,16 @@ from utils import get_args, update_args_by_toml
 def main():
     args = get_args()
     args = update_args_by_toml(args, args.config_filename)
+
+    args.image_list = load_image_list(args.png_list_filename)
+    args.current_image_index = 0
+    # TODO あとで index は、history.json に保存する。そして history.json のファイル名はtomlで指定する
+
     display_image(args)
+
+def load_image_list(filename):
+    with open(filename, 'r', encoding='utf-8') as f:
+        return [line.strip() for line in f if line.strip()]
 
 def display_image(args):
     x = args.canvas_size_x
@@ -20,33 +29,69 @@ def display_image(args):
     print_string_to_canvas(x, y, args.disp_string, args.font, args.font_size, root, canvas)
     do_backmost(root)
 
-    server_thread = Thread(target=run_ipc_listener, args=(args.pipe_name, root, args.disp_msec, args.interval_minutes), daemon=True)
+    server_thread = Thread(target=run_ipc_listener, args=(args, root, canvas), daemon=True)
     server_thread.start()
 
     root.mainloop()
 
-def run_ipc_listener(pipe_name, root, disp_msec, interval_minutes):
+def run_ipc_listener(args, root, canvas):
     last_action_time = datetime.min
     while True:
-        pipe = create_named_pipe(pipe_name)
+        pipe = create_named_pipe(args.pipe_name)
         try:
             print("Waiting for client connection...")
             win32pipe.ConnectNamedPipe(pipe, None)
             print("Client connected.")
-            last_action_time = handle_client_communication(pipe, root, disp_msec, interval_minutes, last_action_time)
+            last_action_time = handle_client_communication(pipe, args, root, canvas, last_action_time)
         finally:
             win32file.CloseHandle(pipe)
 
-def handle_client_communication(pipe, root, disp_msec, interval_minutes, last_action_time):
+def handle_client_communication(pipe, args, root, canvas, last_action_time):
     while True:
         try:
-            last_action_time = handle_received_message(pipe, root, disp_msec, last_action_time, interval_minutes)
+            last_action_time = handle_received_message(pipe, args, root, canvas, last_action_time)
         except pywintypes.error as e:
             if e.args[0] == 109:  # ERROR_BROKEN_PIPE
                 print("Client disconnected.")
                 break
             else:
                 raise
+    return last_action_time
+
+def handle_received_message(pipe, args, root, canvas, last_action_time):
+    resp = win32file.ReadFile(pipe, 64*1024)
+    message = resp[1].decode()
+    print(f"Received: {message}")
+
+    last_action_time = check_and_perform_action(args, root, canvas, last_action_time)
+
+    win32file.WriteFile(pipe, b"Message received")
+    return last_action_time
+
+def check_and_perform_action(args, root, canvas, last_action_time):
+    now = datetime.now()
+    interval_start = now - timedelta(minutes=args.interval_minutes)
+    print(f"Now: {now}, Interval Start: {interval_start}, Last Action Time: {last_action_time}")
+
+    if last_action_time > interval_start:
+        print("Action skipped due to interval restriction.")
+        return last_action_time
+
+    last_action_time = do_action(args, root, canvas)
+    return last_action_time
+
+def do_action(args, root, canvas):
+    # 次の画像を取得
+    next_image = args.image_list[args.current_image_index]
+    args.current_image_index = (args.current_image_index + 1) % len(args.image_list)  # 循環
+
+    # 画像をキャンバスに表示
+    load_image_to_canvas(args.canvas_size_x, args.canvas_size_y, next_image, root, canvas)
+
+    do_topmost(root)
+    root.after(args.disp_msec, do_backmost, root)
+
+    last_action_time = datetime.now()
     return last_action_time
 
 def create_named_pipe(pipe_name):
@@ -59,39 +104,6 @@ def create_named_pipe(pipe_name):
         None
     )
     return pipe
-
-def handle_received_message(pipe, root, disp_msec, last_action_time, interval_minutes):
-    resp = win32file.ReadFile(pipe, 64*1024)
-    message = resp[1].decode()
-    print(f"Received: {message}")
-
-    last_action_time = check_and_perform_action(root, disp_msec, last_action_time, interval_minutes)
-
-    win32file.WriteFile(pipe, b"Message received")
-    return last_action_time
-
-def check_and_perform_action(root, disp_msec, last_action_time, interval_minutes):
-    # 過去interval_minutes分以内にアクションが実行されている場合は、アクションを実行しない
-    now = datetime.now()
-
-    interval_start = now - timedelta(minutes=interval_minutes)
-    print(f"Now: {now}, Interval Start: {interval_start}, Last Action Time: {last_action_time}")
-
-    if last_action_time > interval_start:
-        print("Action skipped due to interval restriction.")
-        return last_action_time
-
-    last_action_time = do_action(root, disp_msec)
-    return last_action_time
-
-def do_action(root, disp_msec):
-    # TODO messageに応じた画像の表示をする。そのため、引数に actions を追加する。tomlに [[actions]] を書き、args.actions で受け渡す。action_name = 'disp_png' などを想定。
-
-    do_topmost(root)
-    root.after(disp_msec, do_backmost, root)
-
-    last_action_time = datetime.now()
-    return last_action_time
 
 if __name__ == "__main__":
     main()
