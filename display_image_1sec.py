@@ -79,6 +79,7 @@ def check_and_perform_action(args, root, canvas, last_action_time):
 
 def do_action(args, root, canvas):
     load_image_to_canvas(args.canvas_size_x, args.canvas_size_y, get_image(args), root, canvas)
+    print_string_to_canvas(args.canvas_size_x, args.canvas_size_y, args.disp_string, args.font, args.font_size, root, canvas)
 
     do_topmost(root)
     root.after(args.disp_msec, do_backmost, root)
