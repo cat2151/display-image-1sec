@@ -1,4 +1,5 @@
 import tkinter
+from PIL import Image, ImageTk
 
 def create_gui(x, y, pos_x, pos_y, title):
     root = tkinter.Tk()
@@ -13,12 +14,18 @@ def create_gui(x, y, pos_x, pos_y, title):
 
     return root,canvas
 
-def load_image_to_canvas(x, y, png_filename, root, canvas):
-    image = tkinter.PhotoImage(file=png_filename)
-    canvas.create_image(x / 2, y / 2, image=image)
-    if not hasattr(root, 'images'):
-        root.images = []
-    root.images.append(image)  # Keep a reference to avoid garbage collection
+def get_image(args):
+    image = args.image_list[args.current_image_index]
+    args.current_image_index = (args.current_image_index + 1) % len(args.image_list)  # 循環
+    return image
+
+def load_image_to_canvas(canvas_width, canvas_height, image_path, root, canvas):
+    img = Image.open(image_path)
+    img = img.resize((canvas_width, canvas_height), Image.Resampling.LANCZOS)
+    tk_img = ImageTk.PhotoImage(img)
+
+    canvas.create_image(0, 0, anchor="nw", image=tk_img)
+    canvas.image = tk_img  # 参照を保持して画像が破棄されないようにする
     root.update()
 
 def print_string_to_canvas(x, y, disp_string, font, font_size, root, canvas):

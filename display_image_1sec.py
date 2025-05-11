@@ -3,7 +3,7 @@ from threading import Thread
 import win32pipe
 import win32file
 import pywintypes
-from gui import create_gui, do_backmost, do_topmost, load_image_to_canvas, print_string_to_canvas
+from gui import create_gui, do_backmost, do_topmost, get_image, load_image_to_canvas, print_string_to_canvas
 from ipc import create_named_pipe
 from utils import get_args, load_image_list, update_args_by_toml
 
@@ -78,12 +78,7 @@ def check_and_perform_action(args, root, canvas, last_action_time):
     return last_action_time
 
 def do_action(args, root, canvas):
-    # 次の画像を取得
-    next_image = args.image_list[args.current_image_index]
-    args.current_image_index = (args.current_image_index + 1) % len(args.image_list)  # 循環
-
-    # 画像をキャンバスに表示
-    load_image_to_canvas(args.canvas_size_x, args.canvas_size_y, next_image, root, canvas)
+    load_image_to_canvas(args.canvas_size_x, args.canvas_size_y, get_image(args), root, canvas)
 
     do_topmost(root)
     root.after(args.disp_msec, do_backmost, root)
