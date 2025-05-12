@@ -1,3 +1,4 @@
+import ctypes
 import tkinter
 from PIL import Image, ImageTk
 
@@ -42,7 +43,23 @@ def do_topmost(root):
     root.attributes("-topmost", True)
     root.update()
 
+    # ALT + TAB の対象にする
+    hwnd = ctypes.windll.user32.GetParent(root.winfo_id())
+    GWL_EXSTYLE = -20
+    WS_EX_TOOLWINDOW = 0x00000080
+    current_style = ctypes.windll.user32.GetWindowLongW(hwnd, GWL_EXSTYLE)
+    ctypes.windll.user32.SetWindowLongW(hwnd, GWL_EXSTYLE, current_style & ~WS_EX_TOOLWINDOW)
+    root.update()
+
 def do_backmost(root):
     root.attributes("-topmost", False)
     root.lower()
+    root.update()
+
+    # ALT + TAB の対象外にする
+    hwnd = ctypes.windll.user32.GetParent(root.winfo_id())
+    GWL_EXSTYLE = -20
+    WS_EX_TOOLWINDOW = 0x00000080
+    current_style = ctypes.windll.user32.GetWindowLongW(hwnd, GWL_EXSTYLE)
+    ctypes.windll.user32.SetWindowLongW(hwnd, GWL_EXSTYLE, current_style | WS_EX_TOOLWINDOW)
     root.update()
