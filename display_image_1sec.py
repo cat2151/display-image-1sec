@@ -82,7 +82,9 @@ def handle_received_message(pipe, actions, root, canvas, last_action_times):
 
     action = next((a for a in actions if a.action_name == action_name), None)
     if action is None:
-        raise ValueError(f"Action '{action_name}' not found in actions list.")
+        print(f"actionがありません : {action_name}")
+        win32file.WriteFile(pipe, b"Action not found")
+        return last_action_times
 
     last_action_time = last_action_times.get(action_name, datetime.min)
     new_last_action_time = check_and_perform_action(action, root, canvas, last_action_time)
