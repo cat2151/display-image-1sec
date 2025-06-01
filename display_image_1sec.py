@@ -18,7 +18,7 @@ def main():
         action.current_image_index = 0
     # TODO あとで index は、history.json に保存する。そして history.json のファイル名はtomlで指定する
 
-    setup_image_viewer(args.pipe_name, args.actions)
+    setup_image_viewer_and_start_mainloop(args.pipe_name, args.actions)
 
 def inherit_base_action_properties(actions):
     for action in actions:
@@ -33,8 +33,8 @@ def inherit_base_action_properties(actions):
     print(f"Inherited action properties: {[action.__dict__ for action in actions]}")
     return actions
 
-def setup_image_viewer(pipe_name, actions):
-    # 最初の action を使って GUI を作る（ウィンドウサイズや位置のため）
+def setup_image_viewer_and_start_mainloop(pipe_name, actions):
+    # 先頭の action を使って GUI を作る（ウィンドウサイズや位置のため）
     action = actions[0]
     x = action.canvas_size_x
     y = action.canvas_size_y
@@ -80,12 +80,9 @@ def handle_received_message(pipe, actions, root, canvas, last_action_times):
     action_name = message.strip()
     print(f"Action name: {action_name}")
 
-    # action_name に一致する action を探す
     action = next((a for a in actions if a.action_name == action_name), None)
     if action is None:
-        print(f"No action found for action_name: {action_name}")
-        win32file.WriteFile(pipe, b"No action found")
-        return last_action_times
+        raise ValueError(f"Action '{action_name}' not found in actions list.")
 
     last_action_time = last_action_times.get(action_name, datetime.min)
     new_last_action_time = check_and_perform_action(action, root, canvas, last_action_time)
@@ -100,7 +97,7 @@ def check_and_perform_action(action, root, canvas, last_action_time):
     print(f"Now: {now}, Interval Start: {interval_start}, Last Action Time: {last_action_time}")
 
     if last_action_time > interval_start:
-        print("Action skipped due to interval restriction.")
+        print("skipします : interval中です")
         return last_action_time
 
     last_action_time = do_action(action, root, canvas)
