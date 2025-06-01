@@ -18,7 +18,7 @@ def main():
         action.current_image_index = 0
     # TODO あとで index は、history.json に保存する。そして history.json のファイル名はtomlで指定する
 
-    display_image(args.pipe_name, args.actions)
+    setup_image_viewer(args.pipe_name, args.actions)
 
 def inherit_base_action_properties(actions):
     for action in actions:
@@ -33,7 +33,7 @@ def inherit_base_action_properties(actions):
     print(f"Inherited action properties: {[action.__dict__ for action in actions]}")
     return actions
 
-def display_image(pipe_name, actions):
+def setup_image_viewer(pipe_name, actions):
     # 最初の action を使って GUI を作る（ウィンドウサイズや位置のため）
     action = actions[0]
     x = action.canvas_size_x
