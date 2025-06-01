@@ -39,8 +39,8 @@ def display_image(pipe_name, actions):
     x = action.canvas_size_x
     y = action.canvas_size_y
 
-    (root, canvas) = create_gui(x, y, action.pos_x, action.pos_y, f"display-image-1sec : {action.png_filename}")
-    load_image_to_canvas(x, y, action.png_filename, root, canvas)
+    (root, canvas) = create_gui(x, y, action.pos_x, action.pos_y, "display-image-1sec")
+    load_image_to_canvas(x, y, get_image(action), root, canvas)
     print_string_to_canvas(x, y, action.disp_string, action.font, action.font_size, root, canvas)
     do_backmost(root)
 
