@@ -12,14 +12,13 @@ def main():
     args = get_args()
     args = update_args_by_toml(args, args.config_filename)
     args.actions = inherit_base_action_properties(args.actions)
-    action = args.actions[0]
-
-    action.image_list = load_image_list(action.png_list_filename)
-    random.shuffle(action.image_list)
-    action.current_image_index = 0
+    for action in args.actions:
+        action.image_list = load_image_list(action.png_list_filename)
+        random.shuffle(action.image_list)
+        action.current_image_index = 0
     # TODO あとで index は、history.json に保存する。そして history.json のファイル名はtomlで指定する
 
-    display_image(args.pipe_name, action)
+    display_image(args.pipe_name, args.actions)
 
 def inherit_base_action_properties(actions):
     for action in actions:
@@ -34,7 +33,9 @@ def inherit_base_action_properties(actions):
     print(f"Inherited action properties: {[action.__dict__ for action in actions]}")
     return actions
 
-def display_image(pipe_name, action):
+def display_image(pipe_name, actions):
+    # 最初の action を使って GUI を作る（ウィンドウサイズや位置のため）
+    action = actions[0]
     x = action.canvas_size_x
     y = action.canvas_size_y
 
@@ -43,46 +44,55 @@ def display_image(pipe_name, action):
     print_string_to_canvas(x, y, action.disp_string, action.font, action.font_size, root, canvas)
     do_backmost(root)
 
-    server_thread = Thread(target=run_ipc_listener, args=(pipe_name, action, root, canvas), daemon=True)
+    server_thread = Thread(target=run_ipc_listener, args=(pipe_name, actions, root, canvas), daemon=True)
     server_thread.start()
 
     root.mainloop()
 
-def run_ipc_listener(pipe_name, action, root, canvas):
-    last_action_time = datetime.min
+def run_ipc_listener(pipe_name, actions, root, canvas):
+    last_action_times = {action.action_name: datetime.min for action in actions}
     while True:
         pipe = create_named_pipe(pipe_name)
         try:
             print("Waiting for client connection...")
             win32pipe.ConnectNamedPipe(pipe, None)
             print("Client connected.")
-            last_action_time = handle_client_communication(pipe, action, root, canvas, last_action_time)
+            last_action_times = handle_client_communication(pipe, actions, root, canvas, last_action_times)
         finally:
             win32file.CloseHandle(pipe)
 
-def handle_client_communication(pipe, action, root, canvas, last_action_time):
+def handle_client_communication(pipe, actions, root, canvas, last_action_times):
     while True:
         try:
-            last_action_time = handle_received_message(pipe, action, root, canvas, last_action_time)
+            last_action_times = handle_received_message(pipe, actions, root, canvas, last_action_times)
         except pywintypes.error as e:
             if e.args[0] == 109:  # ERROR_BROKEN_PIPE
                 print("Client disconnected.")
                 break
             else:
                 raise
-    return last_action_time
+    return last_action_times
 
-def handle_received_message(pipe, action, root, canvas, last_action_time):
+def handle_received_message(pipe, actions, root, canvas, last_action_times):
     resp = win32file.ReadFile(pipe, 64*1024)
     message = resp[1].decode()
     print(f"Received: {message}")
     action_name = message.strip()
     print(f"Action name: {action_name}")
 
-    last_action_time = check_and_perform_action(action, root, canvas, last_action_time)
+    # action_name に一致する action を探す
+    action = next((a for a in actions if a.action_name == action_name), None)
+    if action is None:
+        print(f"No action found for action_name: {action_name}")
+        win32file.WriteFile(pipe, b"No action found")
+        return last_action_times
+
+    last_action_time = last_action_times.get(action_name, datetime.min)
+    new_last_action_time = check_and_perform_action(action, root, canvas, last_action_time)
+    last_action_times[action_name] = new_last_action_time
 
     win32file.WriteFile(pipe, b"Message received")
-    return last_action_time
+    return last_action_times
 
 def check_and_perform_action(action, root, canvas, last_action_time):
     now = datetime.now()
