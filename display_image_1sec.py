@@ -76,6 +76,8 @@ def handle_received_message(pipe, action, root, canvas, last_action_time):
     resp = win32file.ReadFile(pipe, 64*1024)
     message = resp[1].decode()
     print(f"Received: {message}")
+    action_name = message.strip()
+    print(f"Action name: {action_name}")
 
     last_action_time = check_and_perform_action(action, root, canvas, last_action_time)
 
