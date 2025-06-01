@@ -11,6 +11,7 @@ from utils import get_args, load_image_list, update_args_by_toml
 def main():
     args = get_args()
     args = update_args_by_toml(args, args.config_filename)
+    args.actions = inherit_base_action_properties(args.actions)
     action = args.actions[0]
 
     action.image_list = load_image_list(action.png_list_filename)
@@ -19,6 +20,19 @@ def main():
     # TODO あとで index は、history.json に保存する。そして history.json のファイル名はtomlで指定する
 
     display_image(args.pipe_name, action)
+
+def inherit_base_action_properties(actions):
+    for action in actions:
+        if hasattr(action, 'base_action_name'):
+            base_action = next((a for a in actions if a.action_name == action.base_action_name), None)
+            if base_action:
+                for key, value in base_action.__dict__.items():
+                    if not hasattr(action, key):
+                        setattr(action, key, value)
+            else:
+                raise ValueError(f"Base action '{action.base_action_name}' not found for action '{action.action_name}'")
+    print(f"Inherited action properties: {[action.__dict__ for action in actions]}")
+    return actions
 
 def display_image(pipe_name, action):
     x = action.canvas_size_x
