@@ -13,8 +13,22 @@ def update_args_by_toml(args, config_filename=None):
     print(f'args : before: {args}')
     toml_data = read_toml(config_filename)
     print(f'TOML : {toml_data}')
-    for key, value in toml_data.items():
-        setattr(args, key, value)
+    def set_attrs(obj, data):
+        for key, value in data.items():
+            if isinstance(value, list):
+                # tomlに [[action]] のようにlistが定義されている場合
+                new_list = []
+                for item in value:
+                    if isinstance(item, dict):
+                        ns = argparse.Namespace()
+                        set_attrs(ns, item)
+                        new_list.append(ns)
+                    else:
+                        new_list.append(item)
+                setattr(obj, key, new_list)
+            else:
+                setattr(obj, key, value)
+    set_attrs(args, toml_data)
     print(f'args : after : {args}')
     return args
 
