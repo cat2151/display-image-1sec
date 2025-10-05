@@ -3,7 +3,6 @@ from threading import Thread
 import random
 import win32pipe
 import win32file
-import pywintypes
 from gui import create_gui, do_backmost, do_topmost, get_image, load_image_to_canvas, print_string_to_canvas
 from ipc import create_named_pipe
 from utils import get_args, load_image_list, update_args_by_toml
@@ -65,11 +64,13 @@ def handle_client_communication(pipe, actions, root, canvas, last_action_times):
     while True:
         try:
             last_action_times = handle_received_message(pipe, actions, root, canvas, last_action_times)
-        except pywintypes.error as e:
-            if e.args[0] == 109:  # ERROR_BROKEN_PIPE
+        except OSError as e:
+            # ERROR_BROKEN_PIPE (109) やその他のパイプエラーをチェック
+            if e.winerror == 109:  # ERROR_BROKEN_PIPE
                 print("Client disconnected.")
                 break
             else:
+                print(f"Unexpected pipe error: {e}")
                 raise
     return last_action_times
 
