@@ -1,0 +1,42 @@
+{
+    // ファイル保存時にtrailing whitespaceを自動削除
+    "files.trimTrailingWhitespace": true,
+
+    // ファイル保存時に最終行に改行を追加
+    "files.insertFinalNewline": true,
+
+    // ファイル保存時に最終行以降の空行を削除
+    "files.trimFinalNewlines": true,
+
+    // Python用の追加設定
+    "[python]": {
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit",
+            "source.fixAll": "explicit"
+        },
+        "files.trimTrailingWhitespace": true
+    },
+
+    // Python formatter設定（例：autopep8, black, yapfなど）
+    "python.formatting.provider": "autopep8",
+
+    // Pylint設定
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": true,
+
+    // エディタの表示設定
+    "editor.renderWhitespace": "trailing",
+    "editor.rulers": [
+        79,
+        88
+    ],
+    "python.testing.pytestArgs": [
+        "tests"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "python.analysis.extraPaths": [
+        "src"
+    ]
+}
