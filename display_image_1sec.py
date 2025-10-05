@@ -1,11 +1,16 @@
+import random
 from datetime import datetime, timedelta
 from threading import Thread
-import random
-import win32pipe
+
+import pywintypes
 import win32file
-from gui import create_gui, do_backmost, do_topmost, get_image, load_image_to_canvas, print_string_to_canvas
+import win32pipe
+
+from gui import (create_gui, do_backmost, do_topmost, get_image,
+                 load_image_to_canvas, print_string_to_canvas)
 from ipc import create_named_pipe
 from utils import get_args, load_image_list, update_args_by_toml
+
 
 def main():
     args = get_args()
@@ -64,9 +69,9 @@ def handle_client_communication(pipe, actions, root, canvas, last_action_times):
     while True:
         try:
             last_action_times = handle_received_message(pipe, actions, root, canvas, last_action_times)
-        except OSError as e:
-            # ERROR_BROKEN_PIPE (109) やその他のパイプエラーをチェック
-            if e.winerror == 109:  # ERROR_BROKEN_PIPE
+        except pywintypes.error as e: # pylint: disable=no-member
+            # ERROR_BROKEN_PIPE (109) をチェック
+            if e.args[0] == 109:  # ERROR_BROKEN_PIPE
                 print("Client disconnected.")
                 break
             else:
