@@ -1,4 +1,5 @@
 import random
+import subprocess
 from datetime import datetime, timedelta
 from threading import Thread
 
@@ -6,8 +7,8 @@ import pywintypes
 import win32file
 import win32pipe
 
-from gui import (create_gui, do_backmost, do_topmost, get_image,
-                 load_image_to_canvas, print_string_to_canvas)
+from gui import (ImageLoadError, create_gui, do_backmost, do_topmost,
+                 get_image, load_image_to_canvas, print_string_to_canvas)
 from ipc import create_named_pipe
 from utils import get_args, load_image_list, update_args_by_toml
 
@@ -108,18 +109,56 @@ def check_and_perform_action(action, root, canvas, last_action_time):
         print("skipします : interval中です")
         return last_action_time
 
-    last_action_time = do_action(action, root, canvas)
-    return last_action_time
+    try:
+        last_action_time = do_action(action, root, canvas)
+        return last_action_time
+    except RuntimeError as e:
+        # 画像読み込みエラーによる再生成処理後のエラー
+        print(f"FATAL ERROR: {e}")
+        # システム終了前にGUIを閉じる
+        if root:
+            root.quit()
+        raise SystemExit(str(e)) from e
 
 def do_action(action, root, canvas):
-    load_image_to_canvas(action.canvas_size_x, action.canvas_size_y, get_image(action), root, canvas)
-    print_string_to_canvas(action.canvas_size_x, action.canvas_size_y, action.disp_string, action.font, action.font_size, root, canvas)
+    try:
+        load_image_to_canvas(action.canvas_size_x, action.canvas_size_y, get_image(action), root, canvas)
+        print_string_to_canvas(action.canvas_size_x, action.canvas_size_y, action.disp_string, action.font, action.font_size, root, canvas)
 
-    do_topmost(root)
-    root.after(action.disp_msec, do_backmost, root)
+        do_topmost(root)
+        root.after(action.disp_msec, do_backmost, root)
 
-    last_action_time = datetime.now()
-    return last_action_time
+        last_action_time = datetime.now()
+        return last_action_time
+    except ImageLoadError as e:
+        print(f"画像読み込みエラーが発生しました: {e}")
+        print(f"影響を受けたファイル: {e.image_path}")
+
+        # 再生成コマンドを実行
+        if hasattr(action, 'regeneration_command') and action.regeneration_command:
+            try:
+                regenerate_image_list(action)
+                print("画像リストの再生成が完了しました。")
+                raise RuntimeError("画像ファイルが見つかりませんでした。画像リストを再生成しました。アプリケーションを再起動してください。") from e
+            except subprocess.SubprocessError as regen_error:
+                print(f"再生成に失敗しました: {regen_error}")
+                raise RuntimeError(f"画像ファイルが見つからず、再生成にも失敗しました。手動で対応してください。詳細: {e}") from e
+        else:
+            raise RuntimeError(f"画像ファイルが見つかりません。設定を確認して再生成してください。詳細: {e}") from e
+
+def regenerate_image_list(action):
+    """画像リストを再生成する"""
+    command = action.regeneration_command
+    print(f"再生成コマンドを実行します: {command}")
+
+    # subprocessを使ってコマンドを実行
+    result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=60, check=False)
+
+    if result.returncode != 0:
+        raise subprocess.SubprocessError(f"再生成コマンドが失敗しました。終了コード: {result.returncode}, エラー: {result.stderr}")
+
+    print(f"再生成コマンド実行結果: {result.stdout}")
+    return result
 
 if __name__ == "__main__":
     main()

@@ -1,6 +1,15 @@
 import ctypes
 import tkinter
+
 from PIL import Image, ImageTk
+
+
+class ImageLoadError(Exception):
+    """画像読み込みエラーの基底クラス"""
+    def __init__(self, message, image_path, original_error):
+        super().__init__(message)
+        self.image_path = image_path
+        self.original_error = original_error
 
 def create_gui(x, y, pos_x, pos_y, title):
     root = tkinter.Tk()
@@ -21,13 +30,21 @@ def get_image(args):
     return image
 
 def load_image_to_canvas(canvas_width, canvas_height, image_path, root, canvas):
-    img = Image.open(image_path)
-    img = img.resize((canvas_width, canvas_height), Image.Resampling.LANCZOS)
-    tk_img = ImageTk.PhotoImage(img)
+    try:
+        img = Image.open(image_path)
+        img = img.resize((canvas_width, canvas_height), Image.Resampling.LANCZOS)
+        tk_img = ImageTk.PhotoImage(img)
 
-    canvas.create_image(0, 0, anchor="nw", image=tk_img)
-    canvas.image = tk_img  # 参照を保持して画像が破棄されないようにする
-    root.update()
+        canvas.create_image(0, 0, anchor="nw", image=tk_img)
+        canvas.image = tk_img  # 参照を保持して画像が破棄されないようにする
+        root.update()
+    except FileNotFoundError as e:
+        raise ImageLoadError(f"画像ファイルが見つかりません: {image_path}", image_path, e) from e
+    except PermissionError as e:
+        raise ImageLoadError(f"画像ファイルへのアクセス権限がありません: {image_path}", image_path, e) from e
+    except Exception as e:
+        # その他の画像関連エラー（破損ファイル、サポートされていないフォーマット等）
+        raise ImageLoadError(f"画像の読み込みに失敗しました: {image_path} - {str(e)}", image_path, e) from e
 
 def print_string_to_canvas(x, y, disp_string, font, font_size, root, canvas):
     # 縁取り
